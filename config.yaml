@@ -2,7 +2,7 @@
 
 # Dataset Configuration
 dataset:
-  path: "/path/to/waymo/dataset/training.tfrecord*"
+  path: "/home/junsongc/junsongc/daquan/datasets/waymo-end-to-end/waymo_open_dataset_end_to_end_camera_v_1_0_0/training*.tfrecord*"
   sampling_frequency_hz: 1  # Sample at 1Hz from 10Hz dataset
 
 # Image Processing Configuration
