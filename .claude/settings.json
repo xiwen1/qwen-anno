@@ -1,0 +1,7 @@
+{
+ 
+    "env": {
+      "ANTHROPIC_AUTH_TOKEN": "sk-3M9WgbfZDUmil3U3lAjXqAEn3EKYQXEybLCV456IzFyH9z8Q",
+      "ANTHROPIC_BASE_URL": "https://jp.duckcoding.com"
+    }
+}
