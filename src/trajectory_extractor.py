@@ -47,6 +47,7 @@ class TrajectoryExtractor:
 
         Returns:
             List of [x, y, z] coordinates (16 points for 4 seconds at 4Hz)
+            Note: z defaults to 0 if not populated in the dataset
         """
         past_states = frame.past_states
         trajectory = []
@@ -54,7 +55,8 @@ class TrajectoryExtractor:
         for i in range(len(past_states.pos_x)):
             x = float(past_states.pos_x[i])
             y = float(past_states.pos_y[i])
-            z = float(past_states.pos_z[i])
+            # pos_z is optional in the dataset, default to 0 if not available
+            z = float(past_states.pos_z[i]) if i < len(past_states.pos_z) else 0.0
             trajectory.append([x, y, z])
 
         return trajectory
@@ -68,6 +70,7 @@ class TrajectoryExtractor:
 
         Returns:
             List of [x, y, z] coordinates (20 points for 5 seconds at 4Hz)
+            Note: z defaults to 0 if not populated in the dataset
         """
         future_states = frame.future_states
         trajectory = []
@@ -75,7 +78,8 @@ class TrajectoryExtractor:
         for i in range(len(future_states.pos_x)):
             x = float(future_states.pos_x[i])
             y = float(future_states.pos_y[i])
-            z = float(future_states.pos_z[i])
+            # pos_z is optional in the dataset, default to 0 if not available
+            z = float(future_states.pos_z[i]) if i < len(future_states.pos_z) else 0.0
             trajectory.append([x, y, z])
 
         return trajectory
@@ -138,12 +142,11 @@ class TrajectoryExtractor:
         # Check past trajectory
         past_x_len = len(past_states.pos_x)
         past_y_len = len(past_states.pos_y)
-        past_z_len = len(past_states.pos_z)
 
-        if past_x_len != past_y_len or past_x_len != past_z_len:
+        if past_x_len != past_y_len:
             return False, (
                 f"Past trajectory arrays have mismatched lengths: "
-                f"pos_x={past_x_len}, pos_y={past_y_len}, pos_z={past_z_len}"
+                f"pos_x={past_x_len}, pos_y={past_y_len}"
             )
 
         if past_x_len != self.expected_past_points:
@@ -154,12 +157,11 @@ class TrajectoryExtractor:
         # Check future trajectory
         future_x_len = len(future_states.pos_x)
         future_y_len = len(future_states.pos_y)
-        future_z_len = len(future_states.pos_z)
 
-        if future_x_len != future_y_len or future_x_len != future_z_len:
+        if future_x_len != future_y_len:
             return False, (
                 f"Future trajectory arrays have mismatched lengths: "
-                f"pos_x={future_x_len}, pos_y={future_y_len}, pos_z={future_z_len}"
+                f"pos_x={future_x_len}, pos_y={future_y_len}"
             )
 
         if future_x_len != self.expected_future_points:
