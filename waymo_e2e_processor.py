@@ -274,7 +274,15 @@ class WaymoE2EPipeline:
             for frame in frame_iterator:
                 frame_name = frame.frame.context.name
 
-                # Skip if already processed
+                # Check if output file already exists
+                result_file = self.output_handler.results_dir / f"{frame_name}.json"
+                if result_file.exists():
+                    logger.debug(f"Skipping frame with existing output: {frame_name}")
+                    processed_frames_set.add(frame_name)
+                    frame_index += 1
+                    continue
+
+                # Skip if already processed (checkpoint)
                 if resume and frame_name in processed_frames_set:
                     logger.debug(f"Skipping already processed frame: {frame_name}")
                     frame_index += 1

@@ -70,16 +70,19 @@ class ImageProcessor:
         Downsample image to target height maintaining aspect ratio.
 
         Args:
-            image: Input image array
+            image: Input image array (RGB format from TensorFlow)
 
         Returns:
-            Downsampled image array
+            Downsampled image array (BGR format for OpenCV)
         """
-        original_height, original_width = image.shape[:2]
+        # Convert RGB to BGR for OpenCV
+        image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        original_height, original_width = image_bgr.shape[:2]
         aspect_ratio = original_width / original_height
         target_width = int(self.target_height * aspect_ratio)
 
-        downsampled = cv2.resize(image, (target_width, self.target_height), interpolation=cv2.INTER_AREA)
+        downsampled = cv2.resize(image_bgr, (target_width, self.target_height), interpolation=cv2.INTER_AREA)
         return downsampled
 
     def encode_image_to_base64(self, image: np.ndarray) -> str:
