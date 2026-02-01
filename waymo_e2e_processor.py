@@ -37,6 +37,7 @@ class WaymoE2EPipeline:
             config: Configuration object
         """
         self.config = config
+        self.run_dir = config.get_run_dir()
 
         # Initialize components
         self.dataset_loader = WaymoE2EDatasetLoader(
@@ -63,7 +64,7 @@ class WaymoE2EPipeline:
             config.vlm_api.timeout_seconds
         )
         self.output_handler = OutputHandler(
-            config.output.output_dir,
+            str(self.run_dir),
             config.output.results_subdir,
             config.output.checkpoint_file,
             config.output.save_images
@@ -171,6 +172,76 @@ class WaymoE2EPipeline:
             self.failed_frames += 1
             return False
 
+    def _save_run_metadata(self):
+        """Save config and prompt template to run directory."""
+        import shutil
+        import yaml
+
+        try:
+            # Save config
+            config_dict = {
+                'dataset': {
+                    'path': self.config.dataset.path,
+                    'sampling_frequency_hz': self.config.dataset.sampling_frequency_hz,
+                },
+                'image_processing': {
+                    'target_height': self.config.image_processing.target_height,
+                    'cameras': self.config.image_processing.cameras,
+                    'input_mode': self.config.image_processing.input_mode,
+                    'jpeg_quality': self.config.image_processing.jpeg_quality,
+                },
+                'trajectory': {
+                    'past_duration_seconds': self.config.trajectory.past_duration_seconds,
+                    'past_frequency_hz': self.config.trajectory.past_frequency_hz,
+                    'future_duration_seconds': self.config.trajectory.future_duration_seconds,
+                    'future_frequency_hz': self.config.trajectory.future_frequency_hz,
+                },
+                'vlm_api': {
+                    'model_name': self.config.vlm_api.model_name,
+                    'api_key_env_var': self.config.vlm_api.api_key_env_var,
+                    'system_prompt': self.config.vlm_api.system_prompt,
+                    'prompt_template_path': self.config.vlm_api.prompt_template_path,
+                    'max_retries': self.config.vlm_api.max_retries,
+                    'retry_delay_seconds': self.config.vlm_api.retry_delay_seconds,
+                    'timeout_seconds': self.config.vlm_api.timeout_seconds,
+                },
+                'processing': {
+                    'batch_size': self.config.processing.batch_size,
+                    'checkpoint_interval': self.config.processing.checkpoint_interval,
+                    'max_workers': self.config.processing.max_workers,
+                    'max_frames': self.config.processing.max_frames,
+                },
+                'output': {
+                    'output_dir': self.config.output.output_dir,
+                    'run_name': self.config.output.run_name,
+                    'results_subdir': self.config.output.results_subdir,
+                    'checkpoint_file': self.config.output.checkpoint_file,
+                    'log_file': self.config.output.log_file,
+                    'save_images': self.config.output.save_images,
+                },
+                'logging': {
+                    'level': self.config.logging.level,
+                    'format': self.config.logging.format,
+                    'console_output': self.config.logging.console_output,
+                    'file_output': self.config.logging.file_output,
+                },
+            }
+
+            config_path = self.run_dir / "config.yaml"
+            with open(config_path, 'w') as f:
+                yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
+            logger.info(f"Saved config to {config_path}")
+
+            # Copy prompt template
+            prompt_src = Path(self.config.vlm_api.prompt_template_path)
+            if prompt_src.exists():
+                prompt_dst = self.run_dir / "prompt_template.txt"
+                shutil.copy(prompt_src, prompt_dst)
+                logger.info(f"Saved prompt template to {prompt_dst}")
+
+        except Exception as e:
+            logger.warning(f"Failed to save run metadata: {e}")
+
     def run(self, resume: bool = False):
         """
         Run the pipeline.
@@ -179,7 +250,11 @@ class WaymoE2EPipeline:
             resume: Whether to resume from checkpoint
         """
         logger.info("Starting Waymo E2E dataset processing pipeline")
+        logger.info(f"Run directory: {self.run_dir}")
         logger.info(f"Configuration: {self.config}")
+
+        # Save config and prompt to run directory
+        self._save_run_metadata()
 
         self.start_time = time.time()
 
@@ -272,6 +347,11 @@ def main():
         help="Override output directory from config"
     )
     parser.add_argument(
+        "--run-name",
+        type=str,
+        help="Specify run name (default: auto-generated timestamp)"
+    )
+    parser.add_argument(
         "--model-name",
         type=str,
         help="Override model name from config"
@@ -311,13 +391,15 @@ def main():
         config.dataset.path = args.dataset_path
     if args.output_dir:
         config.output.output_dir = args.output_dir
+    if args.run_name:
+        config.output.run_name = args.run_name
     if args.model_name:
         config.vlm_api.model_name = args.model_name
     if args.max_frames:
         config.processing.max_frames = args.max_frames
 
     # Setup logging
-    log_file = Path(config.output.output_dir) / config.output.log_file
+    log_file = config.get_run_dir() / config.output.log_file
     setup_logging(
         str(log_file),
         args.log_level,

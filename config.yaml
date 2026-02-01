@@ -39,6 +39,7 @@ processing:
 # Output Configuration
 output:
   output_dir: "./output"
+  run_name: null  # null for auto-generated timestamp, or specify custom name
   results_subdir: "results"
   checkpoint_file: "checkpoint.json"
   log_file: "processing.log"

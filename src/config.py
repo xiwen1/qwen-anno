@@ -57,6 +57,7 @@ class ProcessingConfig:
 class OutputConfig:
     """Output configuration."""
     output_dir: str = "./output"
+    run_name: Optional[str] = None
     results_subdir: str = "results"
     checkpoint_file: str = "checkpoint.json"
     log_file: str = "processing.log"
@@ -145,10 +146,24 @@ class WaymoE2EConfig:
             raise ValueError(f"Environment variable {self.vlm_api.api_key_env_var} not set")
         return api_key
 
+    def get_run_dir(self) -> Path:
+        """Get the run directory path."""
+        from datetime import datetime
+
+        output_path = Path(self.output.output_dir)
+
+        # Generate run name if not specified
+        if self.output.run_name:
+            run_name = self.output.run_name
+        else:
+            run_name = datetime.now().strftime("run_%Y%m%d_%H%M%S")
+
+        return output_path / run_name
+
     def setup_output_dirs(self):
         """Create output directories."""
-        output_path = Path(self.output.output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
+        run_dir = self.get_run_dir()
+        run_dir.mkdir(parents=True, exist_ok=True)
 
-        results_path = output_path / self.output.results_subdir
+        results_path = run_dir / self.output.results_subdir
         results_path.mkdir(parents=True, exist_ok=True)
