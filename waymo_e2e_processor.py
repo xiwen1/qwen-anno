@@ -65,7 +65,8 @@ class WaymoE2EPipeline:
         self.output_handler = OutputHandler(
             config.output.output_dir,
             config.output.results_subdir,
-            config.output.checkpoint_file
+            config.output.checkpoint_file,
+            config.output.save_images
         )
 
         # Statistics
@@ -143,12 +144,23 @@ class WaymoE2EPipeline:
                 "images_included": ["concatenated"] if self.config.image_processing.input_mode == "concatenated" else ["front_left", "front", "front_right"],
             }
 
+            # Prepare image names for saving
+            if self.config.output.save_images:
+                if self.config.image_processing.input_mode == "concatenated":
+                    image_names = ["concatenated"]
+                else:
+                    image_names = ["front_left", "front", "front_right"]
+            else:
+                image_names = None
+
             # Save result
             self.output_handler.save_result(
                 frame_name,
                 metadata,
                 input_data,
-                vlm_response
+                vlm_response,
+                images_base64=images_base64 if self.config.output.save_images else None,
+                image_names=image_names
             )
 
             self.processed_frames += 1
