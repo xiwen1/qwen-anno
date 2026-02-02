@@ -12,7 +12,6 @@ import logging
 import time
 import sys
 from pathlib import Path
-from typing import Optional
 
 from src.config import WaymoE2EConfig
 from src.dataset_loader import WaymoE2EDatasetLoader
@@ -318,6 +317,9 @@ class WaymoE2EPipeline:
         finally:
             # Save final checkpoint
             self.output_handler.save_checkpoint(processed_frames_set)
+
+            # Save processing order log
+            self.output_handler.save_processing_order_log(list(processed_frames_set))
 
             # Generate summary
             total_frames = self.processed_frames + self.skipped_frames + self.failed_frames

@@ -35,9 +35,14 @@ class WaymoE2EDatasetLoader:
         if num_files == 0:
             raise FileNotFoundError(f"No files found matching pattern: {self.dataset_path}")
 
-        logger.info(f"Found {num_files} TFRecord files")
+        # Convert to list and sort for deterministic ordering
+        filenames_list = sorted(filenames.numpy().astype(str).tolist())
+        num_files = len(filenames_list)
 
-        dataset = tf.data.TFRecordDataset(filenames, compression_type='')
+        logger.info(f"Found {num_files} TFRecord files")
+        logger.debug(f"Files in order: {filenames_list}")
+
+        dataset = tf.data.TFRecordDataset(filenames_list, compression_type='')
         return dataset
 
     def sample_frames_at_target_frequency(self, dataset: tf.data.Dataset) -> Iterator[bytes]:
@@ -78,7 +83,7 @@ class WaymoE2EDatasetLoader:
 
     def get_frame_iterator(self, max_frames: Optional[int] = None) -> Iterator[wod_e2ed_pb2.E2EDFrame]:
         """
-        Get iterator over parsed frames.
+        Get iterator over parsed frames with consistent ordering.
 
         Args:
             max_frames: Maximum number of frames to process (None for all)
@@ -88,6 +93,9 @@ class WaymoE2EDatasetLoader:
         """
         dataset = self.load_dataset()
         frame_count = 0
+
+        logger.info(f"Starting frame iteration with sampling frequency {self.sampling_frequency_hz}Hz "
+                   f"(sampling interval: every {self.sampling_interval}th frame)")
 
         for frame_bytes in self.sample_frames_at_target_frequency(dataset):
             if max_frames and frame_count >= max_frames:

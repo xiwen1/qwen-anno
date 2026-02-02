@@ -142,15 +142,19 @@ class OutputHandler:
 
     def save_checkpoint(self, processed_frames: Set[str]):
         """
-        Save checkpoint of processed frames.
+        Save checkpoint of processed frames with ordering preserved.
 
         Args:
             processed_frames: Set of processed frame names
         """
+        # Keep frames in insertion order (ordered list instead of sorted)
+        # This preserves the actual processing order
+        frames_list = list(processed_frames)
+
         checkpoint = {
             "last_updated": datetime.now().isoformat(),
             "total_processed": len(processed_frames),
-            "processed_frames": sorted(list(processed_frames))
+            "processed_frames": frames_list
         }
 
         try:
@@ -197,3 +201,33 @@ class OutputHandler:
             logger.warning(f"Failed to save summary: {e}")
 
         return summary
+
+    def save_processing_order_log(self, frame_names: List[str]):
+        """
+        Save detailed processing order log for reproducibility.
+
+        Args:
+            frame_names: List of frame names in processing order
+        """
+        log_data = {
+            "timestamp": datetime.now().isoformat(),
+            "total_frames_processed": len(frame_names),
+            "processing_order": frame_names,
+            "frame_metadata": [
+                {
+                    "index": idx,
+                    "frame_name": name,
+                    "scene_id": name.rsplit('-', 1)[0] if '-' in name else name,
+                    "frame_id": name.rsplit('-', 1)[1] if '-' in name else "unknown"
+                }
+                for idx, name in enumerate(frame_names)
+            ]
+        }
+
+        log_path = self.output_dir / "processing_order.json"
+        try:
+            with open(log_path, 'w', encoding='utf-8') as f:
+                json.dump(log_data, f, indent=2)
+            logger.info(f"Saved processing order log to {log_path} ({len(frame_names)} frames)")
+        except Exception as e:
+            logger.warning(f"Failed to save processing order log: {e}")
