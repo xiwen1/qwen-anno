@@ -1,0 +1,53 @@
+# Waymo E2E Dataset Processing Pipeline Configuration
+
+# Dataset Configuration
+dataset:
+  path: "/home/junsongc/junsongc/daquan/datasets/waymo-end-to-end/waymo_open_dataset_end_to_end_camera_v_1_0_0/training*.tfrecord*"
+  sampling_frequency_hz: 1  # Sample at 1Hz from 10Hz dataset
+
+# Image Processing Configuration
+image_processing:
+  target_height: 512  # Target height for downsampling
+  cameras: ["FRONT_LEFT", "FRONT", "FRONT_RIGHT"]
+  input_mode: "concatenated"  # "separate" or "concatenated"
+  jpeg_quality: 90
+
+# Trajectory Configuration
+trajectory:
+  past_duration_seconds: 4
+  past_frequency_hz: 4
+  future_duration_seconds: 5
+  future_frequency_hz: 4
+
+# VLM API Configuration
+vlm_api:
+  model_name: "gpt-2.5-flash"  # or "gpt-4o-20241120", "gemini-3-pro"
+  api_key_env_var: "ONE_API_KEY_KEWEI"
+  system_prompt: "You are an expert labeller of driving scenarios."
+  prompt_template_path: "./input_prompt.txt"
+  max_retries: 3
+  retry_delay_seconds: 2.0
+  timeout_seconds: 60
+
+# Processing Configuration
+processing:
+  batch_size: 1  # Process one frame at a time
+  checkpoint_interval: 10  # Save checkpoint every 10 frames
+  max_workers: 1  # Single-threaded for API rate limiting
+  max_frames: null  # null means process all frames
+
+# Output Configuration
+output:
+  output_dir: "./output"
+  run_name: base_3pro_joint  # null for auto-generated timestamp, or specify custom name
+  results_subdir: "results"
+  checkpoint_file: "checkpoint.json"
+  log_file: "processing.log"
+  save_images: true  # Don't save images to disk
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  console_output: true
+  file_output: true
